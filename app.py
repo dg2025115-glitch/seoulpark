@@ -423,7 +423,24 @@ st.dataframe(
 
 # 군집별 평균 특성
 st.subheader("군집별 평균 특성")
+# 군집별 평균 특성 시각화
+st.write("📊 군집별 시설 특성 비교")
 
+facility_mean = cluster_mean.drop(
+    columns=["면적_로그"]
+)
+
+st.bar_chart(
+    facility_mean,
+    use_container_width=True
+)
+
+st.write("📏 군집별 평균 면적 비교")
+
+st.bar_chart(
+    cluster_mean[["면적_로그"]],
+    use_container_width=True
+)
 cluster_mean = (
     cluster_df
     .groupby("군집")[feature_columns]
