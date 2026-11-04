@@ -261,6 +261,91 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # K-means 군집 분석
+st.subheader("🌳 K-means 공원 유형 분석")
+
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+# 분석 데이터 준비
+cluster_df = df[["공원명", "면적", "주요시설"]].copy()
+
+# 면적 숫자 추출
+area_text = cluster_df["면적"].astype(str)
+
+cluster_df["면적_숫자"] = pd.to_numeric(
+    area_text.str.extract(r"([\d,]+(?:\.\d+)?)")[0]
+    .str.replace(",", "", regex=False),
+    errors="coerce"
+)
+
+# 면적 단위가 ㎡ 또는 m²인 데이터만 사용
+valid_unit = area_text.str.contains(
+    r"㎡|m²",
+    regex=True,
+    na=False
+)
+
+# 면적 데이터 정리
+valid_rows = (
+    valid_unit
+    & cluster_df["면적_숫자"].notna()
+    & (cluster_df["면적_숫자"] > 0)
+    & (cluster_df["공원명"] != "북한산국립공원")
+)
+
+cluster_df = cluster_df.loc[valid_rows].copy()
+
+# 면적 로그 변환
+cluster_df["면적_로그"] = np.log10(
+    cluster_df["면적_숫자"]
+)
+
+# 주요시설 텍스트 정리
+facility_text = (
+    cluster_df["주요시설"]
+    .fillna("")
+    .astype(str)
+)
+
+# 시설 종류별 키워드
+facility_keywords = {
+    "운동시설": ["운동시설", "테니스장", "농구장", "축구장", "운동기구"],
+    "조경시설": ["조경시설", "연못", "분수", "정원", "파고라"],
+    "휴양시설": ["휴양시설", "산책로", "쉼터", "정자", "벤치"],
+    "편익시설": ["편익시설", "화장실", "주차장", "음수대", "매점"],
+    "문화시설": ["교양시설", "문화시설", "도서관", "야외무대", "전시관"],
+    "생태시설": ["생태시설", "생태", "식물원", "동물원", "자연학습장"],
+    "놀이시설": ["놀이시설", "놀이터", "놀이동산"],
+    "체험시설": ["체험시설", "체험관", "관찰대"]
+}
+
+# 시설 종류가 언급되면 1, 아니면 0
+for category, keywords in facility_keywords.items():
+    cluster_df[category] = facility_text.apply(
+        lambda x: int(any(keyword in x for keyword in keywords))
+    )
+
+# 군집 분석 변수
+feature_columns = [
+    "면적_로그",
+    "운동시설",
+    "조경시설",
+    "휴양시설",
+    "편익시설",
+    "문화시설",
+    "생태시설",
+    "놀이시설",
+    "체험시설"
+]
+
+X = cluster_df[feature_columns]
+
+# 데이터 표준화
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# K-means 모델
 kmeans = KMeans(
     n_clusters=3,
     random_state=42,
@@ -269,10 +354,10 @@ kmeans = KMeans(
 
 cluster_df["군집"] = kmeans.fit_predict(X_scaled)
 
-# 결과 출력
+# 분석 결과
 st.write("분석에 사용된 공원 수:", len(cluster_df))
 
-st.write("공원별 군집 결과")
+st.subheader("공원별 군집 결과")
 
 st.dataframe(
     cluster_df[["공원명", "면적", "군집"]],
@@ -280,7 +365,7 @@ st.dataframe(
 )
 
 # 군집별 공원 수
-st.write("군집별 공원 수")
+st.subheader("군집별 공원 수")
 
 cluster_count = (
     cluster_df["군집"]
@@ -290,10 +375,22 @@ cluster_count = (
 
 st.bar_chart(cluster_count)
 
-# 면적과 시설 특성 비교
-st.write("군집별 평균 특성")
+# 군집별 평균 특성
+st.subheader("군집별 평균 특성")
+
+cluster_mean = (
+    cluster_df
+    .groupby("군집")[feature_columns]
+    .mean()
+    .round(2)
+)
 
 st.dataframe(
-    cluster_df.groupby("군집")[feature_columns].mean().round(2),
+    cluster_mean,
     use_container_width=True
+)
+
+st.caption(
+    "시설 특성은 주요시설 설명에 해당 키워드가 포함되어 있는지를 "
+    "기준으로 0과 1로 변환했습니다. 실제 시설 개수는 아닙니다."
 )
