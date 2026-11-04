@@ -177,6 +177,18 @@ st.dataframe(
     use_container_width=True
 )
 
+import numpy as np
+
+st.write("면적 TOP 10 (로그 변환 그래프)")
+
+top10_data["로그 면적"] = np.log10(
+    top10_data["면적_숫자"].clip(lower=1)
+)
+
 st.bar_chart(
-    top10_data.set_index("공원명")["면적_숫자"]
+    top10_data.set_index("공원명")["로그 면적"]
+)
+
+st.caption(
+    "로그 변환 그래프입니다. 실제 면적은 위 표에서 확인하세요."
 )
