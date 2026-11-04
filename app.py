@@ -452,7 +452,24 @@ st.dataframe(
     cluster_mean,
     use_container_width=True
 )
+# 군집별 평균 특성 시각화
+st.write("📊 군집별 시설 특성 비교")
 
+facility_mean = cluster_mean.drop(
+    columns=["면적_로그"]
+)
+
+st.bar_chart(
+    facility_mean,
+    use_container_width=True
+)
+
+st.write("📏 군집별 평균 면적 비교")
+
+st.bar_chart(
+    cluster_mean[["면적_로그"]],
+    use_container_width=True
+)
 st.caption(
     "시설 특성은 주요시설 설명에 해당 키워드가 포함되어 있는지를 "
     "기준으로 0과 1로 변환했습니다. 실제 시설 개수는 아닙니다."
