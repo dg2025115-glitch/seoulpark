@@ -375,6 +375,13 @@ cluster_count = (
 
 st.bar_chart(cluster_count)
 
+st.write("군집별 정확한 공원 수")
+
+st.dataframe(
+    cluster_count.rename("공원 수").rename_axis("군집").reset_index(),
+    use_container_width=True
+)
+
 # 군집별 평균 특성
 st.subheader("군집별 평균 특성")
 
