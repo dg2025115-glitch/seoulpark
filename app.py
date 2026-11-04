@@ -363,7 +363,36 @@ kmeans = KMeans(
 )
 
 cluster_df["군집"] = kmeans.fit_predict(X_scaled)
+# 군집별 대표 공원 찾기
+st.subheader("🏞️ 군집별 대표 공원")
 
+# 각 공원과 자기 군집 중심 사이의 거리 계산
+distances = kmeans.transform(X_scaled)
+
+cluster_df["중심과 거리"] = [
+    distances[i, cluster]
+    for i, cluster in enumerate(cluster_df["군집"])
+]
+
+for cluster_num in sorted(cluster_df["군집"].unique()):
+    st.write(f"### {cluster_num}번 군집")
+
+    group = cluster_df[
+        cluster_df["군집"] == cluster_num
+    ].sort_values("중심과 거리")
+
+    st.write("공원 수:", len(group))
+
+    st.write("대표 공원 TOP 3")
+
+    st.dataframe(
+        group[["공원명", "면적"]].head(3),
+        use_container_width=True
+    )
+
+    st.write("군집에 포함된 전체 공원")
+
+    st.write(", ".join(group["공원명"].astype(str)))
 # 분석 결과
 st.write("분석에 사용된 공원 수:", len(cluster_df))
 
