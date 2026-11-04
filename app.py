@@ -136,13 +136,15 @@ region_count = region_data.value_counts().sort_values(
 )
 
 st.write("자치구별 공원 수")
-st.dataframe(
+TypeError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
+Traceback:
+File "/mount/src/seoulpark/app.py", line 140, in <module>
     region_count.rename("공원 수").reset_index(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
         names="지역"
+        ^^^^^^^^^^^^
     ),
-    use_container_width=True
-)
-
+    ^
 st.bar_chart(region_count)
 
 st.write(
