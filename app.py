@@ -150,3 +150,33 @@ st.bar_chart(
 )
 
 st.write("지역 정보가 있는 데이터:", len(region_data), "개")
+# 공원 면적 TOP 10
+st.subheader("🏆 면적이 넓은 공원 TOP 10")
+
+top10_data = df[["공원명", "면적"]].copy()
+
+top10_data["면적_숫자"] = pd.to_numeric(
+    top10_data["면적"]
+    .astype(str)
+    .str.extract(r"([\d,]+(?:\.\d+)?)")[0]
+    .str.replace(",", "", regex=False),
+    errors="coerce"
+)
+
+top10_data = top10_data.dropna(
+    subset=["면적_숫자"]
+)
+
+top10_data = top10_data.sort_values(
+    by="면적_숫자",
+    ascending=False
+).head(10)
+
+st.dataframe(
+    top10_data[["공원명", "면적"]],
+    use_container_width=True
+)
+
+st.bar_chart(
+    top10_data.set_index("공원명")["면적_숫자"]
+)
