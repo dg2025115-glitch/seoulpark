@@ -12,9 +12,8 @@ st.write("서울시 주요 공원 데이터를 살펴보는 프로젝트입니�
 
 df = pd.read_csv(
     "서울시 주요 공원현황.csv",
-    encoding="utf-8-sig"
+    encoding="cp949"
 )
-
 st.success("데이터 불러오기 성공!")
 
 st.write("데이터 크기:", df.shape)
