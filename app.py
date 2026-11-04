@@ -192,3 +192,108 @@ st.bar_chart(
 st.caption(
     "로그 변환 그래프입니다. 실제 면적은 위 표에서 확인하세요."
 )
+# K-means 군집 분석
+st.subheader("🌳 K-means 공원 유형 분석")
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+import numpy as np
+
+# 분석에 사용할 데이터 복사
+cluster_df = df[["공원명", "면적", "주요시설"]].copy()
+
+# 면적에서 숫자 추출
+cluster_df["면적_숫자"] = pd.to_numeric(
+    cluster_df["면적"]
+    .astype(str)
+    .str.extract(r"([\d,]+(?:\.\d+)?)")[0]
+    .str.replace(",", "", regex=False),
+    errors="coerce"
+)
+
+# 단위가 ㎡ 또는 m²인 데이터만 사용
+area_text = cluster_df["면적"].astype(str)
+valid_unit = area_text.str.contains(
+    r"㎡|m²",
+    regex=True,
+    na=False
+)
+
+# 북한산국립공원은 면적값 검증 전까지 학습에서 제외
+valid_rows = (
+    valid_unit
+    & cluster_df["면적_숫자"].notna()
+    & (cluster_df["공원명"] != "북한산국립공원")
+)
+
+cluster_df = cluster_df.loc[valid_rows].copy()
+
+# 면적 로그 변환
+cluster_df["면적_로그"] = np.log10(
+    cluster_df["면적_숫자"].clip(lower=1)
+)
+
+# 주요시설 텍스트에서 시설 종류 추출
+facility_text = cluster_df["주요시설"].fillna("").astype(str)
+
+facility_keywords = {
+    "운동시설": ["운동시설", "운동장", "테니스장", "농구장", "축구장"],
+    "조경시설": ["조경시설", "연못", "분수", "정원"],
+    "휴양시설": ["휴양시설", "산책로", "쉼터", "정자"],
+    "편익시설": ["편익시설", "화장실", "주차장", "음수대"],
+    "문화시설": ["문화시설", "야외무대", "전시관", "도서관"],
+    "생태시설": ["생태", "식물원", "동물원", "자연학습장"],
+    "놀이시설": ["놀이시설", "놀이터", "놀이동산"]
+}
+
+for category, keywords in facility_keywords.items():
+    cluster_df[category] = facility_text.apply(
+        lambda x: sum(keyword in x for keyword in keywords)
+    )
+
+# 군집 분석에 사용할 변수
+feature_columns = ["면적_로그"] + list(facility_keywords.keys())
+
+X = cluster_df[feature_columns]
+
+# 변수 표준화
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# K-means 군집 분석
+kmeans = KMeans(
+    n_clusters=3,
+    random_state=42,
+    n_init=10
+)
+
+cluster_df["군집"] = kmeans.fit_predict(X_scaled)
+
+# 결과 출력
+st.write("분석에 사용된 공원 수:", len(cluster_df))
+
+st.write("공원별 군집 결과")
+
+st.dataframe(
+    cluster_df[["공원명", "면적", "군집"]],
+    use_container_width=True
+)
+
+# 군집별 공원 수
+st.write("군집별 공원 수")
+
+cluster_count = (
+    cluster_df["군집"]
+    .value_counts()
+    .sort_index()
+)
+
+st.bar_chart(cluster_count)
+
+# 면적과 시설 특성 비교
+st.write("군집별 평균 특성")
+
+st.dataframe(
+    cluster_df.groupby("군집")[feature_columns].mean().round(2),
+    use_container_width=True
+)
