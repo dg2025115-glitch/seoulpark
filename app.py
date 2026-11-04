@@ -282,19 +282,25 @@ cluster_df = df[["공원명", "면적", "주요시설"]].copy()
 # 면적 숫자 추출
 area_text = cluster_df["면적"].astype(str)
 
-# 면적란 맨 앞에 기록된 면적만 추출
-# ㎡, m², m2 형식 지원
+# 면적 단위가 확인되는 데이터만 사용
+valid_unit = area_text.str.contains(
+    r"㎡|m²|m2|제곱미터",
+    regex=True,
+    case=False,
+    na=False
+)
+
 cluster_df["면적_숫자"] = pd.to_numeric(
     area_text.str.extract(
-        r"^\s*(?:총\s*)?([\d,]+(?:\.\d+)?)\s*(?:㎡|m²|m2)",
-        flags=__import__("re").IGNORECASE
+        r"([\d,]+(?:\.\d+)?)"
     )[0].str.replace(",", "", regex=False),
     errors="coerce"
 )
 
-# 유효한 면적 데이터만 선택
+# 유효한 면적 데이터 선택
 valid_rows = (
-    cluster_df["면적_숫자"].notna()
+    valid_unit
+    & cluster_df["면적_숫자"].notna()
     & (cluster_df["면적_숫자"] > 0)
     & (cluster_df["공원명"] != "북한산국립공원")
 )
