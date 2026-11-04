@@ -103,11 +103,25 @@ st.dataframe(
     use_container_width=True
 )
 
-st.write("**이상치 공원 면적 비교**")
+st.write("**이상치 공원 면적 비교 (로그 변환)**")
 
 if not outliers.empty:
-    st.bar_chart(
-        outliers.set_index("공원명")["면적_숫자"]
+
+    # 면적을 로그10으로 변환
+    import numpy as np
+
+    outliers["로그 변환 면적"] = np.log10(
+        outliers["면적_숫자"].clip(lower=1)
     )
+
+    st.bar_chart(
+        outliers.set_index("공원명")["로그 변환 면적"]
+    )
+
+    st.caption(
+        "로그 변환을 적용한 그래프입니다. "
+        "실제 면적값은 위 표에서 확인할 수 있습니다."
+    )
+
 else:
     st.success("이상치가 발견되지 않았습니다.")
