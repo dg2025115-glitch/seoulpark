@@ -227,7 +227,16 @@ valid_rows = (
 )
 
 cluster_df = cluster_df.loc[valid_rows].copy()
+st.subheader("🔍 분석에서 제외된 공원")
 
+excluded_df = df.loc[~df.index.isin(cluster_df.index)]
+
+st.dataframe(
+    excluded_df[["공원명", "면적"]],
+    use_container_width=True
+)
+
+st.write("제외된 공원 수:", len(excluded_df))
 # 면적 로그 변환
 cluster_df["면적_로그"] = np.log10(
     cluster_df["면적_숫자"].clip(lower=1)
