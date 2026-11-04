@@ -131,22 +131,22 @@ st.subheader("🗺️ 지역별 공원 분포")
 region_data = df["지역"].dropna().astype(str).str.strip()
 region_data = region_data[region_data != ""]
 
-region_count = region_data.value_counts().sort_values(
-    ascending=False
-)
+region_count = region_data.value_counts()
+
+region_table = pd.DataFrame({
+    "지역": region_count.index,
+    "공원 수": region_count.values
+})
 
 st.write("자치구별 공원 수")
-TypeError: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
-Traceback:
-File "/mount/src/seoulpark/app.py", line 140, in <module>
-    region_count.rename("공원 수").reset_index(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        names="지역"
-        ^^^^^^^^^^^^
-    ),
-    ^
-st.bar_chart(region_count)
 
-st.write(
-    f"지역 정보가 확인된 공원 수: {len(region_data)}개"
+st.dataframe(
+    region_table,
+    use_container_width=True
 )
+
+st.bar_chart(
+    region_table.set_index("지역")["공원 수"]
+)
+
+st.write("지역 정보가 있는 데이터:", len(region_data), "개")
