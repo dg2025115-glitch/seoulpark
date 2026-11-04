@@ -125,3 +125,26 @@ if not outliers.empty:
 
 else:
     st.success("이상치가 발견되지 않았습니다.")
+# 지역별 공원 분포 분석
+st.subheader("🗺️ 지역별 공원 분포")
+
+region_data = df["지역"].dropna().astype(str).str.strip()
+region_data = region_data[region_data != ""]
+
+region_count = region_data.value_counts().sort_values(
+    ascending=False
+)
+
+st.write("자치구별 공원 수")
+st.dataframe(
+    region_count.rename("공원 수").reset_index(
+        names="지역"
+    ),
+    use_container_width=True
+)
+
+st.bar_chart(region_count)
+
+st.write(
+    f"지역 정보가 확인된 공원 수: {len(region_data)}개"
+)
