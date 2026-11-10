@@ -4,7 +4,7 @@ import numpy as np
 import altair as alt
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-
+from sklearn.metrics import silhouette_score
 # 1. 기본 설정
 st.set_page_config(
     page_title="서울시 공원 데이터 분석",
