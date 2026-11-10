@@ -420,19 +420,116 @@ feature_columns = [
 
 facility_columns = list(facility_keywords.keys())
 
+# 머신러닝 학습 데이터 준비
 X = cluster_df[feature_columns]
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
+# 군집 개수별 모델 평가
+evaluation_rows = []
+
+max_k = min(6, len(cluster_df) - 1)
+
+for k in range(2, max_k + 1):
+    model = KMeans(
+        n_clusters=k,
+        random_state=42,
+        n_init=10
+    )
+
+    labels = model.fit_predict(X_scaled)
+
+    score = silhouette_score(X_scaled, labels)
+
+    evaluation_rows.append({
+        "군집 수": k,
+        "Inertia": model.inertia_,
+        "실루엣 계수": score
+    })
+
+evaluation_df = pd.DataFrame(evaluation_rows)
+
+# 모델 평가 결과 표시
+st.subheader("🤖 머신러닝 모델 평가")
+
+st.write("군집 개수에 따라 모델의 성능이 어떻게 달라지는지 비교합니다.")
+
+st.dataframe(
+    evaluation_df.round(3),
+    use_container_width=True
+)
+
+# 엘보우 방법 그래프
+st.subheader("1. 엘보우 방법")
+
+inertia_chart = alt.Chart(evaluation_df).mark_line(
+    point=True
+).encode(
+    x=alt.X("군집 수:Q", axis=alt.Axis(tickMinStep=1)),
+    y=alt.Y("Inertia:Q", title="Inertia"),
+    tooltip=["군집 수", "Inertia"]
+).properties(
+    title="군집 수에 따른 Inertia 변화",
+    height=300
+)
+
+st.altair_chart(inertia_chart, use_container_width=True)
+
+st.caption(
+    "Inertia는 군집 내부 데이터가 얼마나 모여 있는지를 나타냅니다. "
+    "값이 감소하다가 감소 폭이 작아지는 지점을 살펴봅니다."
+)
+
+# 실루엣 계수 그래프
+st.subheader("2. 실루엣 계수")
+
+silhouette_chart = alt.Chart(evaluation_df).mark_line(
+    point=True
+).encode(
+    x=alt.X("군집 수:Q", axis=alt.Axis(tickMinStep=1)),
+    y=alt.Y("실루엣 계수:Q", scale=alt.Scale(domain=[-1, 1])),
+    tooltip=[
+        "군집 수",
+        alt.Tooltip("실루엣 계수:Q", format=".3f")
+    ]
+).properties(
+    title="군집 수에 따른 실루엣 계수 변화",
+    height=300
+)
+
+st.altair_chart(silhouette_chart, use_container_width=True)
+
+st.caption(
+    "실루엣 계수는 군집이 얼마나 잘 구분되는지 나타냅니다. "
+    "1에 가까울수록 군집이 잘 분리된 것입니다."
+)
+
+# 최종 모델 학습
+final_k = 3
+
 kmeans = KMeans(
-    n_clusters=3,
+    n_clusters=final_k,
     random_state=42,
     n_init=10
 )
 
 cluster_df["군집"] = kmeans.fit_predict(X_scaled)
 
+# 최종 모델 결과
+final_score = evaluation_df.loc[
+    evaluation_df["군집 수"] == final_k,
+    "실루엣 계수"
+].iloc[0]
+
+st.subheader("3. 최종 모델")
+
+col1, col2 = st.columns(2)
+
+col1.metric("최종 군집 개수", f"{final_k}개")
+col2.metric("실루엣 계수", f"{final_score:.3f}")
+
+st.success("K-means 군집화 모델 학습이 완료되었습니다.")
 # 10. 군집별 공원 수 - 도넛 그래프
 st.subheader("그래프 1. 군집별 공원 수 비교")
 
