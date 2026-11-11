@@ -506,7 +506,7 @@ st.caption(
 )
 
 # 최종 모델 학습
-final_k = 3
+final_k = 5
 
 kmeans = KMeans(
     n_clusters=final_k,
