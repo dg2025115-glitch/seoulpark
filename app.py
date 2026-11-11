@@ -516,6 +516,84 @@ kmeans = KMeans(
 
 cluster_df["군집"] = kmeans.fit_predict(X_scaled)
 
+# 군집별 평균 면적을 기준으로 번호 정렬
+cluster_order = (
+    cluster_df.groupby("군집")["면적_숫자"]
+    .mean()
+    .sort_values()
+    .index
+    .tolist()
+)
+
+cluster_mapping = {
+    old: new for new, old in enumerate(cluster_order)
+}
+
+cluster_df["군집"] = cluster_df["군집"].map(cluster_mapping)
+
+# 군집별 분석 결과
+st.subheader("🌳 군집별 공원 유형 분석")
+
+facility_columns = [
+    "운동시설", "조경시설", "휴양시설", "편익시설",
+    "문화시설", "생태시설", "놀이시설", "체험시설"
+]
+
+cluster_summary = cluster_df.groupby("군집").agg(
+    공원수=("공원명", "count"),
+    평균면적=("면적_숫자", "mean")
+).reset_index()
+
+facility_summary = cluster_df.groupby("군집")[facility_columns].mean() * 100
+
+# 군집별 유형 이름과 특징 만들기
+for _, row in cluster_summary.iterrows():
+    cluster_num = int(row["군집"])
+    facilities = facility_summary.loc[cluster_num]
+
+    top_facilities = facilities.sort_values(ascending=False).head(3)
+
+    facility_names = [
+        name for name, value in top_facilities.items()
+        if value > 0
+    ]
+
+    if cluster_num == 0:
+        size_name = "소규모"
+    elif cluster_num == 1:
+        size_name = "중규모"
+    else:
+        size_name = "대규모"
+
+    st.markdown(f"### 군집 {cluster_num} - {size_name} 공원 유형")
+
+    col1, col2 = st.columns(2)
+    col1.metric("공원 수", f"{int(row['공원수'])}개")
+    col2.metric("평균 면적", f"{row['평균면적']:,.0f}㎡")
+
+    st.write(
+        "시설 특징: " +
+        (", ".join(facility_names) if facility_names else "주요 시설 특징 없음")
+    )
+
+    st.write("시설별 포함 비율(%)")
+
+    facility_chart_data = (
+        facility_summary.loc[[cluster_num]]
+        .T.reset_index()
+    )
+    facility_chart_data.columns = ["시설 종류", "포함 비율"]
+
+    facility_chart = alt.Chart(facility_chart_data).mark_bar().encode(
+        x=alt.X("포함 비율:Q", title="공원 중 해당 시설이 포함된 비율(%)"),
+        y=alt.Y("시설 종류:N", sort="-x", title="시설 종류"),
+        tooltip=["시설 종류", alt.Tooltip("포함 비율:Q", format=".1f")]
+    ).properties(height=250)
+
+    st.altair_chart(facility_chart, use_container_width=True)
+
+    st.divider()
+
 # 최종 모델 결과
 final_score = evaluation_df.loc[
     evaluation_df["군집 수"] == final_k,
